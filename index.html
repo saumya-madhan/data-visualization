@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name='author' content='Robert Fonod'>
+    <title>The Narrative of Modern Olympic Games</title>
+    <!-- Load favicon -->
+    <link rel="icon" href="https://robert-fonod.com/favicon.ico?v=2">
+    <!-- Load css files -->
+    <link rel='stylesheet' type='text/css' href='index.css'>
+    <!-- Load d3.js libraries -->
+    <script src='https://d3js.org/d3.v4.min.js'></script>
+    <!-- Load custom scripts-->
+    <script type="text/javascript" src='index.js' charset='utf-8'></script>
+    <script src='https://cdn.jsdelivr.net/npm/d3@7'></script>
+    <body onload='init()'></body>
+</head>
+
+<body>
+    <div id='header'>
+        <h1 style="text-align:center">Are C02 Emissions an Imminent Threat?</h1>
+    </div>
+    <div id='introDivId'>
+        <p style="text-align:center;"><img src="pic.jpeg" alt="The five-ringed symbol of the Olympic Games" style="height:140px;"></p>
+        <p> There is significant discourse as to whether climate change in an imminent threat. In this visualization we will Explore
+            whether c02 emissions have increased globally. We will also determine which countries are the largest producers of high c02 emissions.
+            Finally, we will determine if there is a correlation between country population and emissions levels.
+        </p>
+       
+    </div>
+    <p id="second" style="display: block;">  second </p>
+    <p id="third" style="display: none;"> third </p>
+    <br>
+    <div id='buttonsDivId'>
+        <button id="bs" type="button" class="btn-summer btn-default">Let's Get Started</button>
+        <button id="goTo1" type="button" class="btn-home btn-default" style="display: none;" > Next Scene</button>
+        <button id="goTo2" type="button" class="btn-home btn-default" style="display: none;" > Next Scene</button>
+        <!-- <button id="bw" type="button" class="btn-winter btn-default" onclick="winterOlympics()">Explore Winter Olympics</button>
+        <button id="bn" type="button" class="btn btn-default" style="visibility : hidden" onclick="nextScene(0)">Next Olympics &raquo;</button> -->
+    </div>
+
+    <!-- <script>
+        const myBtn = document. getElementById("bs");
+        myBtn. addEventListener("click", function(e) {
+        document .body. innerHTML = "<h1>Welcome, ";
+        
+
+        });
+    </script> -->
+
+    <script>
+        async function init() {
+            const data = await d3.csv('https://Jamrhein12.github.io/players.csv');
+            // Filter data to...
+            // 1. Player played college basketball
+            // 2. Player started career in or after 2000
+            // 3. Player has a career nba ppg >= 20
+            const filteredData = data.filter(row => 
+                row.active_from >= 2000 && 
+                row.college !== null && 
+                row.college !== "" &&
+                row.NBA_ppg >= 20.0);
+
+            console.log(filteredData);
+        }
+        function createBarChart() {
+            // Example data
+            const data = [
+                { country: 'USA', emissions: 6000 },
+                { country: 'China', emissions: 8000 },
+                { country: 'India', emissions: 4000 },
+                { country: 'Russia', emissions: 7000 },
+                { country: 'Brazil', emissions: 5000 }
+            ];
+
+            // SVG dimensions
+            const svgWidth = 600;
+            const svgHeight = 400;
+
+            // Margins around the chart
+            const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+            const width = svgWidth - margin.left - margin.right;
+            const height = svgHeight - margin.top - margin.bottom;
+
+            // Select the chart container
+            const svg = d3.select('#chart')
+                .append('svg')
+                .attr('width', svgWidth)
+                .attr('height', svgHeight);
+
+            // Create scales
+            const xScale = d3.scaleBand()
+                .domain(data.map(d => d.country))
+                .range([margin.left, width + margin.left])
+                .padding(0.1);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(data, d => d.emissions)])
+                .range([height, 0]);
+
+            // Add bars
+            svg.selectAll('rect')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('x', d => xScale(d.country))
+                .attr('y', d => yScale(d.emissions))
+                .attr('width', xScale.bandwidth())
+                .attr('height', d => height - yScale(d.emissions))
+                .attr('fill', 'steelblue');
+
+            // Add x-axis
+            svg.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(xScale));
+
+            // Add y-axis
+            svg.append('g')
+                .attr('transform', `translate(${margin.left},0)`)
+                .call(d3.axisLeft(yScale));
+        }
+
+        document.getElementById('bs').addEventListener('click', function () {
+            document.getElementById('introDivId').style.display = 'none';
+            document.getElementById('bs').style.display = 'none';
+            document.getElementById('goTo1').style.display = 'block';
+
+        });
+
+        document.getElementById('goTo1').addEventListener('click', function () {
+            document.getElementById('introDivId').style.display = 'none';
+            document.getElementById('bs').style.display = 'none';
+            document.getElementById('goTo1').style.display = 'none';
+            document.getElementById('goTo2').style.display = 'block';
+            document.getElementById('second').style.display = 'block';
+            createBarChart();
+        });
+        document.getElementById('goTo2').addEventListener('click', function () {
+            document.getElementById('introDivId').style.display = 'none';
+            document.getElementById('bs').style.display = 'none';
+            document.getElementById('goTo1').style.display = 'none';
+            document.getElementById('goTo2').style.display = 'block';
+            document.getElementById('second').style.display = 'none';
+            document.getElementById('third').style.display = 'block';
+        });
+     </script>
+    <br>
+    
+</body>
+
+</html>
