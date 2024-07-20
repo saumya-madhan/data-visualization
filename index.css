@@ -79,7 +79,16 @@ svg {
     margin: auto;
     position: relative;
     text-align: center;
+    justify-content: center;
+    display: flex;
 }
+
+.goTo1 {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
 
 button {
     background-color: #59b465be;

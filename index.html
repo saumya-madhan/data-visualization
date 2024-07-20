@@ -1,90 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name='author' content='Robert Fonod'>
-    <title>The Narrative of Modern Olympic Games</title>
+    <title>Are CO2 Emissions an Imminent Threat?</title>
     <!-- Load favicon -->
     <link rel="icon" href="https://robert-fonod.com/favicon.ico?v=2">
     <!-- Load css files -->
     <link rel='stylesheet' type='text/css' href='index.css'>
     <!-- Load d3.js libraries -->
     <script src='https://d3js.org/d3.v4.min.js'></script>
-    <!-- Load custom scripts-->
-    <script type="text/javascript" src='index.js' charset='utf-8'></script>
     <script src='https://cdn.jsdelivr.net/npm/d3@7'></script>
-    <body onload='init()'></body>
-</head>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson@3"></script>
 
-<body>
+</head>
+<body onload='init()'>
     <div id='header'>
-        <h1 style="text-align:center">Are C02 Emissions an Imminent Threat?</h1>
+        <h1 style="text-align:center">Are CO2 Emissions an Imminent Threat?</h1>
     </div>
     <div id='introDivId'>
-        <p style="text-align:center;"><img src="pic.jpeg" alt="The five-ringed symbol of the Olympic Games" style="height:140px;"></p>
-        <p> There is significant discourse as to whether climate change in an imminent threat. In this visualization we will Explore
-            whether c02 emissions have increased globally. We will also determine which countries are the largest producers of high c02 emissions.
+        <p style="text-align:center;"><img src="pic.jpeg" alt="Are CO2 Emissions an Imminent Threat?" style="height:140px;"></p>
+        <p> There is significant discourse as to whether climate change is an imminent threat. In this visualization, we will explore
+            whether CO2 emissions have increased globally. We will also determine which countries are the largest producers of high CO2 emissions.
             Finally, we will determine if there is a correlation between country population and emissions levels.
         </p>
-       
     </div>
-    <p id="second" style="display: block;">  second </p>
-    <p id="third" style="display: none;"> third </p>
     <br>
+    
+    <div id="chart" style="justify-content: center;"></div>
+    <p id="info" style="display: none;"> Hover over the bars for more info!</p>
+    <p id="info_map" style="display: none;"> Hover over the cells for more info!</p>
     <div id='buttonsDivId'>
         <button id="bs" type="button" class="btn-summer btn-default">Let's Get Started</button>
-        <button id="goTo1" type="button" class="btn-home btn-default" style="display: none;" > Next Scene</button>
-        <button id="goTo2" type="button" class="btn-home btn-default" style="display: none;" > Next Scene</button>
-        <!-- <button id="bw" type="button" class="btn-winter btn-default" onclick="winterOlympics()">Explore Winter Olympics</button>
-        <button id="bn" type="button" class="btn btn-default" style="visibility : hidden" onclick="nextScene(0)">Next Olympics &raquo;</button> -->
+        <button id="goTo1" type="button" class="btn-home btn-default" style="display: none;"> Next Scene</button>
+        <button id="goTo2" type="button" class="btn-home btn-default" style="display: none;"> Next Scene</button>
     </div>
 
-    <!-- <script>
-        const myBtn = document. getElementById("bs");
-        myBtn. addEventListener("click", function(e) {
-        document .body. innerHTML = "<h1>Welcome, ";
-        
-
-        });
-    </script> -->
+    <div id="dropdown-container" style="display: flex; justify-content: center; width: 100%; display: none;">
+        <label for="dropdown">Select a year:</label>
+        <select id="dropdown">
+            <!-- Options will be populated here -->
+        </select>
+    </div>
 
     <script>
+        const formattedData = [];
+
         async function init() {
-            const data = await d3.csv('https://Jamrhein12.github.io/players.csv');
-            // Filter data to...
-            // 1. Player played college basketball
-            // 2. Player started career in or after 2000
-            // 3. Player has a career nba ppg >= 20
-            const filteredData = data.filter(row => 
-                row.active_from >= 2000 && 
-                row.college !== null && 
-                row.college !== "" &&
-                row.NBA_ppg >= 20.0);
+            try {
+                const data = await d3.csv('https://raw.githubusercontent.com/saumya-madhan/data-visualization/main/co2.csv');
+                data.forEach(d => {
+                    formattedData.push({
+                        country: d.Country,
+                        country_code: d.Code,
+                        year: +d.Year, // Ensure year is a number
+                        population: +d.Population, // Convert to number
+                        area: +d.Area, // Convert to number
+                        world_percentage: +d.world_percentage, // Convert to number
+                        density: +d.Density, // Convert to number
+                        emissions: +d.Co2 // Convert emissions to number
+                    });
+                });
 
-            console.log(filteredData);
+
+                console.log(formattedData);
+                const years = formattedData.map(d => d.year);
+                const uniqueYears = [...new Set(years)];
+
+                const dropdown = d3.select("#dropdown");
+                dropdown.selectAll("option")
+                    .data(uniqueYears)
+                    .enter()
+                    .append("option")
+                    .text(d => d)
+                    .attr("value", d => d);
+
+                // Event listener for dropdown change
+                dropdown.on("change", function() {
+                    const selectedYear = +this.value;
+                    createBarChart(selectedYear);
+                });
+
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
         }
-        function createBarChart() {
-            // Example data
-            const data = [
-                { country: 'USA', emissions: 6000 },
-                { country: 'China', emissions: 8000 },
-                { country: 'India', emissions: 4000 },
-                { country: 'Russia', emissions: 7000 },
-                { country: 'Brazil', emissions: 5000 }
-            ];
 
-            // SVG dimensions
-            const svgWidth = 600;
-            const svgHeight = 400;
+        function createBarChart(year=1750) {
+            // Clear existing chart
+            d3.select('#chart').selectAll('*').remove();
+
+            // Filter and sort data for the selected year
+            const data_year = formattedData.filter(d => d.year === year);
+            data_year.sort((a, b) => b.population - a.population);
+            const data = data_year.slice(0, 5);
+
+            console.log(data);
+
+            const svgWidth = 900;
+            const svgHeight = 500;
 
             // Margins around the chart
-            const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+            const margin = { top: 50, right: 20, bottom: 60, left: 150 };
             const width = svgWidth - margin.left - margin.right;
             const height = svgHeight - margin.top - margin.bottom;
 
-            // Select the chart container
+            // Create SVG element
             const svg = d3.select('#chart')
                 .append('svg')
                 .attr('width', svgWidth)
@@ -97,7 +120,7 @@
                 .padding(0.1);
 
             const yScale = d3.scaleLinear()
-                .domain([0, d3.max(data, d => d.emissions)])
+                .domain([0, d3.max(data, d => d.emissions) + 500])
                 .range([height, 0]);
 
             // Add bars
@@ -120,34 +143,287 @@
             svg.append('g')
                 .attr('transform', `translate(${margin.left},0)`)
                 .call(d3.axisLeft(yScale));
+
+            // Add x-axis label
+            svg.append('text')
+                .attr('x', width / 2 + margin.left)
+                .attr('y', svgHeight - 80)
+                .attr('text-anchor', 'middle')
+                .text('Most Highly Populated Countries');
+
+            // Add y-axis label
+            svg.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -height / 2)
+                .attr('y', margin.left - 100)
+                .attr('text-anchor', 'middle')
+                .text('CO2 Emissions');
+
+            // Create a tooltip
+            const tooltip = d3.select("#chart")
+                .append("div")
+                .style("opacity", 0)
+                .attr("class", "tooltip")
+                .style("background-color", "white")
+                .style("color", "black")
+                .style("border", "solid")
+                .style("border-width", "1px")
+                .style("border-radius", "5px")
+                .style("padding", "10px");
+
+            svg.selectAll('rect')
+                .on('mouseover', function(event, d) {
+                    tooltip
+                        .html(`<p>Country:</p> ${d.country}<br>
+                            <strong>Population (${d.year}):</strong> ${d.population ? d.population.toLocaleString() : 'N/A'}
+                            <br><strong>Area  (${d.year}):</strong> ${d.area ? d.area.toLocaleString() : 'N/A'}
+                            <br><strong>C02 Emissions  (${d.year}):</strong> ${d.emissions ? d.emissions.toLocaleString() : 'N/A'}`)
+                            
+                        .style('opacity', 1);
+                })
+                .on('mousemove', function(event) {
+                    tooltip
+                        .style('top', (event.pageY - 10) + 'px')
+                        .style('left', (event.pageX + 10) + 'px');
+                })
+                .on('mouseout', function() {
+                    tooltip.style('opacity', 0);
+                });
         }
 
-        document.getElementById('bs').addEventListener('click', function () {
+        function createLineChart() {
+            // Clear existing chart
+            d3.select('#chart').selectAll('*').remove();
+
+            // Filter data for the top 5 countries in 1990
+            const most_emissions = formattedData.filter(d => d.year === 1990);
+            most_emissions.sort((a, b) => b.emissions - a.emissions);
+            const top5Countries = most_emissions.slice(0, 5).map(d => d.country);
+
+            // Filter data for the top 5 countries over all years
+            const top5Data = formattedData.filter(d => top5Countries.includes(d.country));
+
+            const svgWidth = 900;
+            const svgHeight = 500;
+
+            // Margins around the chart
+            const margin = { top: 50, right: 20, bottom: 60, left: 150 };
+            const width = svgWidth - margin.left - margin.right;
+            const height = svgHeight - margin.top - margin.bottom;
+
+            // Create SVG element
+            const svg = d3.select('#chart')
+                .append('svg')
+                .attr('width', svgWidth)
+                .attr('height', svgHeight);
+
+            // Create scales
+            const xScale = d3.scaleLinear()
+                .domain(d3.extent(top5Data, d => d.year))
+                .range([margin.left, width + margin.left]);
+
+            const yScale = d3.scaleLinear()
+                .domain([0, d3.max(top5Data, d => d.emissions)])
+                .range([height, 0]);
+
+            // Create color scale
+            const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
+                .domain(top5Countries);
+
+            // Add x-axis
+            svg.append('g')
+                .attr('transform', `translate(0,${height})`)
+                .call(d3.axisBottom(xScale).tickFormat(d3.format("d")));
+
+            // Add y-axis
+            svg.append('g')
+                .attr('transform', `translate(${margin.left},0)`)
+                .call(d3.axisLeft(yScale));
+
+            // Add x-axis label
+            svg.append('text')
+                .attr('x', width / 2 + margin.left)
+                .attr('y', svgHeight - 20)
+                .attr('text-anchor', 'middle')
+                .text('Year');
+
+            // Add y-axis label
+            svg.append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('x', -height / 2)
+                .attr('y', margin.left - 100)
+                .attr('text-anchor', 'middle')
+                .text('CO2 Emissions');
+
+            // Add line paths
+            const line = d3.line()
+                .x(d => xScale(d.year))
+                .y(d => yScale(d.emissions));
+
+            const nestedData = d3.nest()
+                .key(d => d.country)
+                .entries(top5Data);
+
+            svg.selectAll('.line')
+                .data(nestedData)
+                .enter()
+                .append('path')
+                .attr('class', 'line')
+                .attr('d', d => line(d.values))
+                .attr('stroke', d => colorScale(d.key))
+                .attr('fill', 'none');
+
+            // Add legend
+            const legend = svg.selectAll('.legend')
+                .data(nestedData)
+                .enter()
+                .append('g')
+                .attr('class', 'legend')
+                .attr('transform', (d, i) => `translate(0,${i * 20})`);
+
+            legend.append('rect')
+                .attr('x', width + margin.right)
+                .attr('y', 10)
+                .attr('width', 10)
+                .attr('height', 10)
+                .attr('fill', d => colorScale(d.key));
+
+            legend.append('text')
+                .attr('x', width + margin.right + 15)
+                .attr('y', 20)
+                .attr('dy', '0.35em')
+                .attr('font-size', '10px')
+                .text(d => d.key);
+        }
+        function createHeatMap(year=1750) {
+            
+            d3.select('#chart').selectAll('*').remove();
+
+            const svgWidth = 600;
+            const svgHeight = 600;
+            const cellSize = 50;
+
+            // Generate random data
+            console.log(formattedData);
+            
+            x = formattedData.filter(d => d.year === year);
+            const emissions_data = x.map(d => ({country: d.country, emissions: d.emissions}));
+            console.log(emissions_data);
+
+            const N = emissions_data.length;
+            const numRows = Math.floor(Math.sqrt(N));
+            const numCols = Math.ceil(N / numRows);
+
+            const data = [];
+            var ct = 0;
+            for (let i = 0; i < numRows; i++) {
+                for (let j = 0; j < numCols; j++) {
+                        data.push({
+                            x: j,
+                            y: i,
+                            ...emissions_data[ct]
+                        });
+                        ct += 1;
+                    }
+                }
+            
+            console.log(data);
+
+            // Create SVG element
+            const svg = d3.select('#chart')
+                .append('svg')
+                .attr('width', svgWidth)
+                .attr('height', svgHeight)
+                .attr('margin-left', `500`);
+
+            // Create color scale
+            const colorScale = d3.scaleSequential(d3.interpolateViridis)
+                .domain([1000, 1000000000]);
+
+            // Create cells
+            svg.selectAll('rect')
+                .data(data)
+                .enter()
+                .append('rect')
+                .attr('x', d => d.x * cellSize)
+                .attr('y', d => d.y * cellSize)
+                .attr('width', cellSize)
+                .attr('height', cellSize)
+                .attr('fill', d => colorScale(d.emissions))
+                .attr('stroke', '#fff');
+
+            const tooltip = d3.select("#chart")
+                .append("div")
+                .style("opacity", 0)
+                .attr("class", "tooltip")
+                .style("background-color", "white")
+                .style("color", "black")
+                .style("border", "solid")
+                .style("border-width", "1px")
+                .style("border-radius", "5px")
+                .style("padding", "10px");
+
+            svg.selectAll('rect')
+                .on('mouseover', function(event, d) {
+                    tooltip
+                        .html(`<strong>Country:</strong> ${d.country}<br>
+                            <strong>CO2 Emissions:</strong> ${d.emissions.toLocaleString()}`)
+                        .style('opacity', 1);
+                })
+                .on('mousemove', function(event) {
+                    tooltip
+                        .style('top', (event.pageY - 10) + 'px')
+                        .style('left', (event.pageX + 10) + 'px');
+                })
+                .on('mouseout', function() {
+                    tooltip.style('opacity', 0);
+                });
+            console.log(formattedData);
+                const years = formattedData.map(d => d.year);
+                const uniqueYears = [...new Set(years)];
+
+                const dropdown = d3.select("#dropdown");
+                dropdown.selectAll("option")
+                    .data(uniqueYears)
+                    .enter()
+                    .append("option")
+                    .text(d => d)
+                    .attr("value", d => d);
+
+                // Event listener for dropdown change
+                dropdown.on("change", function() {
+                        const selectedYear = +this.value;
+                        createHeatMap(selectedYear);
+                });
+        }
+
+
+        document.getElementById('bs').onclick = function() {
             document.getElementById('introDivId').style.display = 'none';
             document.getElementById('bs').style.display = 'none';
             document.getElementById('goTo1').style.display = 'block';
+            document.getElementById('dropdown-container').style.display = 'flex';
+            createBarChart(); // Initialize the chart with 2022 data
+            document.getElementById('info').style.display = 'flex';
+        };
 
-        });
+        document.getElementById('goTo1').onclick = function() {
+            // document.getElementById('second').style.display = 'none';
+            document.getElementById('goTo1').style.display = 'none';
+            // document.getElementById('third').style.display = 'none';
+            document.getElementById('goTo2').style.display = 'block';
+            document.getElementById('dropdown-container').style.display = 'none';
+            document.getElementById('info').style.display = 'none';
+            createLineChart();
+        };
 
-        document.getElementById('goTo1').addEventListener('click', function () {
-            document.getElementById('introDivId').style.display = 'none';
-            document.getElementById('bs').style.display = 'none';
-            document.getElementById('goTo1').style.display = 'none';
-            document.getElementById('goTo2').style.display = 'block';
-            document.getElementById('second').style.display = 'block';
-            createBarChart();
-        });
-        document.getElementById('goTo2').addEventListener('click', function () {
-            document.getElementById('introDivId').style.display = 'none';
-            document.getElementById('bs').style.display = 'none';
-            document.getElementById('goTo1').style.display = 'none';
-            document.getElementById('goTo2').style.display = 'block';
-            document.getElementById('second').style.display = 'none';
-            document.getElementById('third').style.display = 'block';
-        });
-     </script>
-    <br>
-    
+        document.getElementById('goTo2').onclick = function() {
+            // document.getElementById('third').style.display = 'none';
+            document.getElementById('goTo2').style.display = 'none';
+            document.getElementById('dropdown-container').style.display = 'flex';
+            document.getElementById('info_map').style.display = 'flex';
+            createHeatMap()
+        };
+    </script>
 </body>
-
 </html>
